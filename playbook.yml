@@ -1,0 +1,55 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: install essentials
+    yum:
+      name: "{{ item }}"
+      state: installed
+    with_items:
+      - wget
+      - curl
+      - httpd
+      - epel-release
+
+  - name: add yum repositories
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+      - https://repo.mysql.com/mysql57-community-release-el7-9.noarch.rpm
+
+  - name: install php
+    yum:
+      name: "{{ item }}"
+      state: installed
+      enablerepo: remi,remi-php71
+    with_items: [php, php-common, php-opcache, php-devel, php-mbstring, php-mcrypt, php-mysqlnd, php-phpunit-PHPUnit, php-pecl-xdebug]
+
+  - name: install mysql server
+    yum:
+      name: mysql-community-server
+      state: installed
+
+  - name: start & enable services
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    with_items:
+      - httpd
+      - mysqld
+
+  - name: stop & disable firewalld
+    service:
+      name: firewalld
+      state: stopped
+      enabled: no
+
+  - copy:
+      src: docroot/
+      dest: /var/www/html
+      owner: vagrant
+      group: apache
+      mode: 0755
